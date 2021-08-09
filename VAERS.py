@@ -95,11 +95,16 @@ def process_to_one_file():
         temp = temp.to_dict(orient='records')
         syms = []
         for t in temp:
-            syms.append(t['SYMPTOM1'])
-            syms.append(t['SYMPTOM2'])
-            syms.append(t['SYMPTOM3'])
-            syms.append(t['SYMPTOM4'])
-            syms.append(t['SYMPTOM5'])
+            if isinstance(t['SYMPTOM1'],str):
+                syms.append(t['SYMPTOM1'])
+            if isinstance(t['SYMPTOM2'],str):
+                syms.append(t['SYMPTOM2'])
+            if isinstance(t['SYMPTOM3'],str):
+                syms.append(t['SYMPTOM3'])
+            if isinstance(t['SYMPTOM4'],str):
+                syms.append(t['SYMPTOM4'])
+            if isinstance(t['SYMPTOM5'],str):
+                syms.append(t['SYMPTOM5'])
         idf_sym.append({'VAERS_ID':v,'SYMPTOMS':syms})
     df_sym = pd.DataFrame(idf_sym)
 
@@ -141,13 +146,13 @@ def break_down_2(_df,column):
     l = list(df[column].unique())
     for i in l:
         df0 = df[df[column]==i]
-        print(column.ljust(10),'\t',str(i).ljust(10),'\t',str(len(df0)).ljust(10),'\t','{:.2f}'.format((len(df0)/len(df))*100).ljust(10))
+        print(column.ljust(10),'\t',str(i).ljust(10),'\t',str(len(df0))[0:10].ljust(10),'\t','{:.2f}'.format((len(df0)/len(df))*100).ljust(10))
 
-def process_symptoms_to_list(df):
+def process_symptoms_to_list(df,column='SYMPTOMS'):
     """
     returns a list of symptoms for the dataframe
     """
-    s = df['SYMPTOMS'].to_list()
+    s = df[column].to_list()
     l = []
     for i in s:
         try:
@@ -173,36 +178,46 @@ def break_down_3(_df,column,buckets,message=''):
     df['percent'] = df['percent'].round(2)
     print(df)
 
-def symptom_list(df,top=100):
+def symptom_list(df,print_top=100,column='SYMPTOMS'):
     """
     displays a list of the most popular symptoms
     note: symptoms might be medical jargon or plain english
     i.e. \"RASH\",\"ERYTHEMA\", and \"ITCHY RED SKIN\" would be reported as different items (for now)
     """
 
-    print(
+    verbose = True
+    if print_top == 0:
+        verbose = False
+
+    if verbose:
+        print(
 """
 note: symptoms might be medical jargon or plain english
 i.e. \"RASH\",\"ERYTHEMA\", and \"ITCHY RED SKIN\" would be reported as different items
 """
-    )
+        )
 
-    symptoms =  process_symptoms_to_list(df)
+    symptoms =  process_symptoms_to_list(df,column)
     symp_count = len(symptoms)
     symptoms = Counter(symptoms)
     symptoms = symptoms.most_common()
     # print(symptoms)
 
-    print('\ntop {top} symptoms'.format(top=top))
+    if verbose:
+        print('\ntop {print_top} symptoms'.format(print_top=print_top))
     cs = [4,24,12,12]
-    print('#'.ljust(cs[0]),'symptom'.ljust(cs[1]),'value'.ljust(cs[2]),'percent'.ljust(cs[3]))
-    for index,i in enumerate(symptoms[0:top]):
-        print(
-            str(index).ljust(cs[0]),
-            str(i[0][0:cs[1]]).ljust(cs[1]),
-            str(i[1]).ljust(cs[2]),
-            '{:.2f}'.format((i[1]/symp_count)*100).ljust(cs[3])
-        )
+
+    if verbose:
+        print('#'.ljust(cs[0]),'symptom'.ljust(cs[1]),'value'.ljust(cs[2]),'percent'.ljust(cs[3]))
+    
+    if verbose:
+        for index,i in enumerate(symptoms[0:print_top]):
+            print(
+                str(index).ljust(cs[0]),
+                str(i[0][0:cs[1]]).ljust(cs[1]),
+                str(i[1]).ljust(cs[2]),
+                '{:.2f}'.format((i[1]/symp_count)*100).ljust(cs[3])
+            )
     
     return symptoms
 
@@ -319,7 +334,38 @@ https://digital.ahrq.gov/sites/default/files/docs/publication/r18hs017045-lazaru
         vax_label)
 
 
+def symptom_filter_search(df, search_list):
+    data = df.to_dict(orient='records')
+
+    search_list = [i.upper() for i in search_list]
     
+
+    results = []
+    for d in data:
+        try:
+            d['SYMPTOMS'] = [i.upper() for i in d['SYMPTOMS'] if isinstance(i, str)]
+        
+            symptom_match = list(set(d['SYMPTOMS']) & set(search_list))
+            d['SYMPTOMS_MATCH'] = symptom_match
+            d['SYMPTOMS_MATCH_LENGTH'] = len(symptom_match)
+            if len(symptom_match) > 0:
+                results.append(d)
+        except:
+            pass
+
+    return pd.DataFrame(results)
+
+
+def print_row(items,column_lengths=[]):
+    row = ''
+    for index,i in enumerate(items):
+        try:
+            cl = column_lengths[index]
+        except IndexError:
+            cl = 20
+        row += str(i)[0:cl].ljust(cl)
+    print(row)
+
 
 def main():
     """
@@ -340,7 +386,11 @@ def main():
 
     print('\n\n--------------------------------\n\n')
 
-    symptoms = symptom_list(df,top=100)
+    print('all data: ',len(df))
+
+    print('\n\n--------------------------------\n\n')
+
+    symptoms = symptom_list(df,print_top=100)
 
     print('\n\n--------------------------------\n\n')
 
@@ -359,6 +409,139 @@ def main():
     percentages(df,half_VAX,'half_vax',80,120)
 
 
+def women_issues():
+    """
+    neighbor (steve's wife...unknown name) mentioned symptoms after first dose of vaccine.
+    this is for her, but also other women that might be having these issues.
+    """
+
+    #this might not work on linux or macOS
+    try:
+        os.system('cls')
+    except:
+        pass
+
+    #settings
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.max_rows', None)
+
+    df = get_data()
+
+    print('\n\n--------------------------------\n\n')
+
+    print('all data: ',len(df))
+    print(break_down_2(df,'SEX'))
+    
+
+    print('\n\n--------------------------------\n\n')
+    
+    print(
+    """
+~63% of the people who are vaccinated are women
+https://www.statista.com/statistics/1212103/share-of-persons-initiating-covid-vaccinations-by-gender-us-first-month/
+    """
+    )
+
+    print('\n\n--------------------------------\n\n')
+
+    women_repro_symptoms = [
+        'Intermenstrual bleeding',
+        'Menopause',
+        'Heavy menstrual bleeding',
+        'dysmenorrhoea',
+        'ABNORMAL UTERINE BLEEDING',
+        'MATERNAL EXPOSURE BEFORE PREGNANCY',
+        'MENSTRUATION IRREGULAR',
+        'Oligomenorrhea',
+        'OLIGOMENORRHOEA',
+        'POLYMENORRHOEA',
+        'MENSTRUAL DISORDER', 
+        'OLIGOMENORRHOEA',
+        'ANOVULATORY CYCLE',
+        'OVULATION DELAYED',
+        'BACTERIAL VAGINOSIS',
+        'GYNAECOLOGICAL EXAMINATION ABNORMAL',
+        'OVARIAN CYST',
+        'BIOPSY UTERUS',
+        'UTERINE LEIOMYOMA',
+        'HOT FLUSH',
+        'BREAST TENDERNESS',
+        'BREAST SWELLING',
+        'BREAST PAIN',
+        'VAGINAL HAEMORRHAGE'
+        ]
+    women_repro_symptoms = [i.upper() for i in women_repro_symptoms]
+
+    df_symptoms = symptom_filter_search(df,women_repro_symptoms)
+
+    # print('the people who have 1 or more women_repro_symptoms')
+
+    #women only
+    w_df = df[df['SEX']=='F']
+    u_df = df[df['SEX']=='U']
+    w_count = len(w_df) + (len(u_df)/2)
+
+    vaxxed = 191*10**6 #from google 8/3/2021 (one or more vaccination)
+
+    women_vaxxed = vaxxed * 0.63
+
+
+    vaers_ratio = ( len(df_symptoms)/w_count )
+
+    #based on the ratio of repro symptoms and vaers women
+    wrs = women_vaxxed * vaers_ratio
+
+    min_wrs = wrs * 0.80
+    max_wrs = wrs * 1.20
+
+    # minmin_wrs_percent = (min_wrs/min_F_vaers)*100
+    # minmax_wrs_percent = (min_wrs/max_F_vaers)*100
+    # maxmax_wrs_percent = (max_wrs/max_F_vaers)*100
+    # maxmin_wrs_percent = (max_wrs/min_F_vaers)*100
+
+    cl = [25,5,15]
+    print_row(['total vaxxed (1 or more)','','{:,.2f}'.format(vaxxed)],column_lengths=cl)
+    print_row(['women vaxxed ~0.63%','','{:,.2f}'.format(women_vaxxed)],column_lengths=cl)
+    print_row(['repro sympt / women count','','{:,.4f}'.format(vaers_ratio)],column_lengths=cl)
+    print_row(['women w/ repro symptoms','','{:,.2f}'.format(wrs)],column_lengths=cl)
+    print_row(['min women w/ repro symptoms','','{:,.2f}'.format(min_wrs)],column_lengths=cl)
+    print_row(['min women w/ repro symptoms','','{:,.2f}'.format(max_wrs)],column_lengths=cl)
+
+
+    print('\n\n--------------------------------\n\n')
+
+    print('most common to least common symptoms and how they compare to all_symptoms')
+
+    all_symptoms = symptom_list(df,print_top=0)
+
+    cl= [10,25,10,10]
+    print_row(['index','symptoms','count','percent of symptoms'],column_lengths=cl)
+    for index,i in enumerate(all_symptoms):
+        if i[0].upper() in women_repro_symptoms:
+            print_row(
+                [
+                    index,
+                    i[0],
+                    '{:,.2f}'.format(i[1]),
+                    '{:.2f}'.format((i[1]/len(all_symptoms))*100) 
+                ],
+                column_lengths=cl
+                )
+
+
+    print('\n\n--------------------------------\n\n')
+
+    file_name  = os.path.join(datapath,'women_repro_symptoms_20210808.csv')
+    df_symptoms.to_csv(file_name)
+    print('saved: ',file_name)
+
+
 if __name__ == '__main__':
 
-    main()
+    # main()
+    women_issues()
+
+    # print_row(['One','Two','Three','Four'],[20,15,10,5])
+    # print_row(['One','Two','Three','Four'],[20,15,10,5])
+    # print_row(['One','Two','Three','Four'],[20,15,10,5])
+    # print_row(['One','Two','Three','Four'],[20,15,10,5])
