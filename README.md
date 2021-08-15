@@ -3,14 +3,16 @@
 
 <!--TOC-->
 * [VAERS](#vaers)
+	* [Note](#note)
 	* [Disclaimer](#disclaimer)
-	* [get started](#get-started)
-		* [1. download the data from VAERS website](#1.-download-the-data-from-vaers-website)
-		* [2. move the AllVAERSDataCSVS.zip to VAERS folder and unzip it](#2.-move-the-allvaersdatacsvs.zip-to-vaers-folder-and-unzip-it)
-		* [3. check the files](#3.-check-the-files)
-		* [4. run main() from VAERS.py](#4.-run-main()-from-vaers.py)
+	* [FAQS](#faqs)
 
 <!--TOC-->
+
+
+## Note
+this project was built using the .IPYNB (jupyter notebook file)
+
 ## Disclaimer
 **THIS IS NOT MEDICAL ADVICE**  
 if you want medical advice please go see your doctor.
@@ -18,30 +20,18 @@ if you want medical advice please go see your doctor.
 please also read the disclaimer on the VAERS data on their website. 
 [VAERS website](https://vaers.hhs.gov/data.html)
 
-## get started
-### 1. download the data from VAERS website
 
-[link to VAERS website](https://vaers.hhs.gov/data/datasets.html?)
 
-this will give you AllVAERSDataCSVS.zip
+## FAQS
+1. why do i need to download the data.
+the data was too large to add to this project.  
+In addition, it is good for you to read the disclaimer and understand the source of the file.
 
-### 2. move the AllVAERSDataCSVS.zip to VAERS folder and unzip it
+2. why write this as a jupyter notebook?
+in a jupyter notebook the user has to open it up and read the notes.  
+I wanted to make sure the users understood why I did the calculations I did, and why I did them that way.
 
-### 3. check the files
+3. how to i get this code to run?
+open the VAERS.IPYNB in jupyter notebooks, or any application that supports .IPYNB files. Then Read through the code and run each section.
 
-you should have at least 6 files   
-```
-.../VAERS/AllVAERSDataCSVS/  
-    2021VAERSVAX.csv  
-    2021VAERSSYMPTOMS.csv  
-    2021VAERSDATA.csv  
-    2020VAERSVAX.csv  
-    2020VAERSSYMPTOMS.csv  
-    2020VAERSDATA.csv  
-```
-
-### 4. run main() from VAERS.py
-
-this will merge the files above (if it's the first time running).
-and print out some stats about the data.  
 
